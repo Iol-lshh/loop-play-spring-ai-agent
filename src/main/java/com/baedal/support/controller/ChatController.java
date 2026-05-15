@@ -1,5 +1,6 @@
-package com.baedal.support;
+package com.baedal.support.controller;
 
+import com.baedal.support.model.ChatRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.web.bind.annotation.*;
