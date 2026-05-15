@@ -1,0 +1,21 @@
+@baseUrl = http://localhost:8080
+
+### 단순 프롬프트
+POST {{baseUrl}}/api/v1/prompt-lab
+Content-Type: application/json
+
+{
+  "systemPrompt": "너는 배달 앱 고객 지원 챗봇이야. 고객 문의에 답변해줘.",
+  "message": "음식이 1시간째 안 와요.",
+  "repeat": 5
+}
+
+### 구조화된 프롬프트
+POST {{baseUrl}}/api/v1/prompt-lab
+Content-Type: application/json
+
+{
+  "systemPrompt": "너는 배달 앱 고객 지원 상담 AI야. 고객 메시지를 분류하고 반드시 유효한 JSON만 응답해.\n필드: summary, actionDetail, category (ORDER/DELIVERY/REFUND/PAYMENT/ACCOUNT_COUPON/ETC), urgency (LOW/NORMAL/HIGH/CRITICAL), privacy (LOW/MIDDLE/HIGH), nextAction (ANSWER_DIRECTLY/CHECK_MANUAL/ESCALATE/ASK_FOR_INFO/CONFIRM_INTENT/REJECT), neededInfo (배열, nextAction이 ASK_FOR_INFO 또는 CONFIRM_INTENT일 때만 채울 것. 그 외에는 빈 배열).",
+  "message": "음식이 1시간째 안 와요.",
+  "repeat": 5
+}

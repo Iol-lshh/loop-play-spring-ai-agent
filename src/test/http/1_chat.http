@@ -1,0 +1,9 @@
+@baseUrl = http://localhost:8080
+
+### 단순 채팅
+POST {{baseUrl}}/api/v1/chat
+Content-Type: application/json
+
+{
+  "message": "주문번호 2024-1234 배달 어디쯤에 있어요?"
+}

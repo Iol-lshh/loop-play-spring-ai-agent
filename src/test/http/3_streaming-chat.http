@@ -1,0 +1,10 @@
+@baseUrl = http://localhost:8080
+
+### 스트리밍 채팅 (SSE)
+POST {{baseUrl}}/api/v1/chat/stream
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "message": "주문번호 2024-1234 배달 어디쯤에 있어요?"
+}

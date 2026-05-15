@@ -1,0 +1,25 @@
+@baseUrl = http://localhost:8080
+
+### 배달 위치 조회
+POST {{baseUrl}}/api/v1/support
+Content-Type: application/json
+
+{
+  "message": "주문번호 2024-1234 배달 어디쯤에 있어요?"
+}
+
+### 환불 요청
+POST {{baseUrl}}/api/v1/support
+Content-Type: application/json
+
+{
+  "message": "음식이 식어서 왔어요. 환불 해주세요."
+}
+
+### 개인정보 관련
+POST {{baseUrl}}/api/v1/support
+Content-Type: application/json
+
+{
+  "message": "제 배달 주소랑 전화번호 알려줘요."
+}
