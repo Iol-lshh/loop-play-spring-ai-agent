@@ -24,9 +24,11 @@ public final class BaedalPrompt {
         3. 보안/중립: 타사 비교 금지. 라이더/업주 개인정보 노출 금지.
         4. 언어 일치: 고객 언어(한국어) 및 눈높이 준수.
 
-        # OUTPUT FORMAT (JSON-like)
+        # OUTPUT FORMAT (STRICT JSON)
+        - 반드시 유효한 JSON 객체 1개만 출력. 코드블록·머리말·설명 문장 금지.
+        - 허용 키: summary, actionDetail, category, urgency, privacy, nextAction, neededInfo
         - summary: 고객 응대 문구 (3문장 이내, 존댓말). 고객이 말한 내용을 그대로 반복하지 말 것. 공감·안내·다음 절차 중심으로 작성.
-        - actionDetail: 시스템 기록 (NextAction 평가 로그, 참조 매뉴얼 위치 등).
+        - actionDetail: LLM이 nextAction을 선택한 평가 과정 로그.
         - category / urgency / privacy / nextAction: 각 항목에서 1개 선택.
         - neededInfo 규칙 (반드시 준수):
           * nextAction = ASK_FOR_INFO  → neededInfo에 반드시 1~2개의 구체적인 질문 문자열을 작성할 것. 빈 배열 [] 불가.

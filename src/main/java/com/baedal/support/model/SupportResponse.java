@@ -22,6 +22,11 @@ public record SupportResponse(
         List<String> neededInfo
 ) {
     public SupportResponse {
+        if (category == null) throw new IllegalArgumentException("category는 null일 수 없습니다");
+        if (urgency == null) throw new IllegalArgumentException("urgency는 null일 수 없습니다");
+        if (privacy == null) throw new IllegalArgumentException("privacy는 null일 수 없습니다");
+        if (nextAction == null) throw new IllegalArgumentException("nextAction은 null일 수 없습니다");
+
         // invariant: NextAction과 neededInfo 정합성
         // - 이후 검증 예외를 retry 걸어 처리할 수 있겠다.
         // - 이런 일련의 정책 로직은 specification으로 빼는게 좋을 것 같으며,

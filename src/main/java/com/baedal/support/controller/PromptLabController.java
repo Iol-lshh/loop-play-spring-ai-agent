@@ -3,7 +3,9 @@ package com.baedal.support.controller;
 import com.baedal.support.model.SupportResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -26,8 +28,23 @@ public class PromptLabController {
     // 실험 후:
     // - 단순 프롬프트 vs 구조화된 프롬프트로 각 5회 호출
     // - categoryConsistency 수치를 비교하여 README에 기록
+    // TODO [2단계]: 프롬프트 정량 비교 실험 엔드포인트를 구현하라.
+    //
+    // 구현 힌트:
+    // 1. req.systemPrompt()를 System Prompt로 설정한 ChatClient를 빌드한다.
+    // 2. req.repeat() 횟수만큼 반복하여 .entity(SupportResponse.class)를 호출한다.
+    // 3. 결과 리스트를 PromptLabResult.from()에 넘겨 통계를 계산한다.
+    //
+    // 실험 후:
+    // - 단순 프롬프트 vs 구조화된 프롬프트로 각 5회 호출
+    // - categoryConsistency 수치를 비교하여 README에 기록
     @PostMapping
     public PromptLabResult experiment(@RequestBody PromptLabRequest req) {
+        if (req.repeat() < 1 || req.repeat() > 20) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "repeat must be between 1 and 20");
+        }
+
         var client = builder
                 .defaultSystem(req.systemPrompt())
                 .build();
