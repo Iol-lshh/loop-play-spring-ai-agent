@@ -33,8 +33,38 @@ AI가 목적을 모르면 규칙을 따르는 것과 고객을 대하는 것 사
 원인은 Spring AI `BeanOutputConverter`가 `.entity(SupportResponse.class)` 호출 시 Java enum 스키마를 자동으로 프롬프트에 추가하기 때문이다.
 즉, 어떤 system prompt를 넣어도 schema 힌트가 공통으로 주입되어 category 분류는 항상 안정적으로 나온다.
 
+**실측 결과** (`temperature=0.3`, `message="음식이 1시간째 안 와요."`, `repeat=5`):
+
+| 실험 | categoryConsistency | urgency 분포 |
+|---|---|---|
+| 단순 프롬프트 | 1.0 (DELIVERY 5/5) | HIGH 4, NORMAL 1 |
+| 구조화 프롬프트 | 1.0 (DELIVERY 5/5) | NORMAL 5 |
+
+→ category는 두 방식 모두 안정. urgency에서 차이 발생 — 구조화 프롬프트가 urgency 판단을 보수적으로 유도.
 → 공정한 비교를 위해서는 BeanOutputConverter 없이 raw 텍스트 응답을 받아 직접 파싱하거나,
    `BaedalPrompt.SYSTEM_PROMPT` 자체를 비교 대상으로 넣는 실험 설계가 필요하다.
+
+원시 데이터: `.doc/experiments/promptlab-temp0.3.md`
+
+---
+
+## Temperature 실험 결과
+
+동일 메시지(`"음식이 1시간째 안 와요."`)를 temperature 0.0 / 0.3 / 0.7에서 각 5회 호출.
+
+| temperature | categoryConsistency | nextActionConsistency | 언어 혼용 | 특이사항 |
+|---|---|---|---|---|
+| 0.0 | 1.0 | 1.0 (CHECK_MANUAL 5/5) | 있음(고착) | 5회 완전 동일 응답. 잘못된 summary가 반복됨 |
+| 0.3 | 1.0 | 0.6 (CHECK_MANUAL 3, ANSWER_DIRECTLY 2) | 1회 | nextAction 분산 시작. summary 품질 양호 |
+| 0.7 | 1.0 | 0.4 (3종 혼재) | 없음 | ASK_FOR_INFO 등장. 자연스러운 한국어 유지 |
+
+**발견**:
+- category는 모든 temperature에서 100% DELIVERY — BeanOutputConverter schema 주입 효과 재확인
+- temperature 0.0: 결정론적이지만, 초기 생성 품질 결함(언어 혼용)이 고착되는 리스크
+- temperature 0.7: nextAction 다양성 최대(ASK_FOR_INFO까지 등장), invariant 검증 필요성 확인
+- **운영 권장**: 0.3이 품질·일관성 균형점. 단 프롬프트에 '반드시 한국어로만 응답' 명시 보강 필요
+
+원시 데이터: `.doc/experiments/exp-temp-comparison.md`
 
 ---
 
