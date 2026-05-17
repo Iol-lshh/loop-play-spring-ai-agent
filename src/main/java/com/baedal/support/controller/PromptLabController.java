@@ -28,15 +28,20 @@ public class PromptLabController {
         }
 
         List<SupportResponse> results = new java.util.ArrayList<>();
+        List<String> errors = new java.util.ArrayList<>();
         for (int i = 0; i < req.repeat(); i++) {
-            results.add(chatClient.prompt()
-                    .system(req.systemPrompt())
-                    .user(req.message())
-                    .call()
-                    .entity(SupportResponse.class));
+            try {
+                results.add(chatClient.prompt()
+                        .system(req.systemPrompt())
+                        .user(req.message())
+                        .call()
+                        .entity(SupportResponse.class));
+            } catch (Exception e) {
+                errors.add("Iteration " + (i + 1) + ": " + e.getMessage());
+            }
         }
 
-        return PromptLabResult.from(results);
+        return PromptLabResult.from(results, errors);
     }
 
     public record PromptLabRequest(
@@ -47,11 +52,14 @@ public class PromptLabController {
 
     public record PromptLabResult(
             int totalRuns,
+            int successCount,
+            int errorCount,
+            List<String> errors,
             Map<String, Long> categoryCounts,
             Map<String, Long> urgencyCounts,
             double categoryConsistency
     ) {
-        public static PromptLabResult from(List<SupportResponse> results) {
+        public static PromptLabResult from(List<SupportResponse> results, List<String> errors) {
             var catCounts = results.stream()
                     .collect(Collectors.groupingBy(
                             r -> r.category().name(), Collectors.counting()));
@@ -62,7 +70,12 @@ public class PromptLabController {
                     .mapToLong(Long::longValue).max().orElse(0);
 
             return new PromptLabResult(
-                    results.size(), catCounts, urgCounts,
+                    results.size() + errors.size(),
+                    results.size(),
+                    errors.size(),
+                    errors,
+                    catCounts,
+                    urgCounts,
                     results.isEmpty() ? 0 : (double) maxCat / results.size()
             );
         }
