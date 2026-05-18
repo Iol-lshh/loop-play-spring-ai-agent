@@ -1,0 +1,55 @@
+@baseUrl = http://localhost:8080
+
+### [4단계-A] Round 1 — Tool 없음, 입력 토큰 기준선
+POST {{baseUrl}}/api/v1/chat
+Content-Type: application/json
+
+{"message": "안녕하세요"}
+
+>>! ./output/r2-4-a/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("응답 비어있지 않음", function() {
+    client.assert(response.body.length > 0, "응답이 비어 있음");
+});
+client.log(JSON.stringify({ scenario: "4단계-A", status: response.status, body: response.body }));
+%}
+
+### [4단계-B] Round 2 — Tool 3개 등록, 입력 토큰 증가분 확인
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "안녕하세요"}
+
+>>! ./output/r2-4-b/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("응답 비어있지 않음", function() {
+    client.assert(response.body.length > 0, "응답이 비어 있음");
+});
+client.log(JSON.stringify({ scenario: "4단계-B", status: response.status, body: response.body }));
+%}
+
+### [4단계-C] Tool 실제 호출 시 토큰 측정 (Round 1 대비 몇 배인지 계산)
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1234 배달 어디쯤에 있어요?"}
+
+>>! ./output/r2-4-c/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("역삼역 포함 (Tool 호출 확인)", function() {
+    client.assert(response.body.includes("역삼역"), "응답에 '역삼역'이 없음 — Tool이 호출되지 않았을 수 있음");
+});
+client.log(JSON.stringify({ scenario: "4단계-C", status: response.status, body: response.body }));
+%}
