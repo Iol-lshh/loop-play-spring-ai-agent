@@ -40,6 +40,7 @@ public class OrderTools {
     public OrderDetailView getOrderDetail(
             @ToolParam(description = "조회할 주문번호. 'YYYY-XXXX' 형식 (예: 2024-1234)") String orderId
     ) {
+        log.info("[Tool] getOrderDetail(orderId={})", orderId);
         return orderService.findById(orderId)
                 .map(this::toDetailView)
                 .orElse(null);
@@ -54,6 +55,7 @@ public class OrderTools {
     public DeliveryStatusView getDeliveryStatus(
             @ToolParam(description = "조회할 주문번호. 'YYYY-XXXX' 형식 (예: 2024-1234)") String orderId
     ) {
+        log.info("[Tool] getDeliveryStatus(orderId={})", orderId);
         return orderService.findById(orderId)
                 .map(this::toDeliveryView)
                 .orElse(null);
@@ -74,8 +76,9 @@ public class OrderTools {
             """)
     public CancelOrderResult cancelOrder(
             @ToolParam(description = "취소할 주문번호. 'YYYY-XXXX' 형식 (예: 2024-1234)") String orderId,
-            @ToolParam(description = "취소 사유. 고객이 직접 입력한 사유 또는 상담 내용 요약") String reason
+            @ToolParam(description = "취소 사유. 고객이 말한 사유 또는 대화 내용 요약. 명시적으로 말하지 않은 경우 '고객 요청'으로 기입한다.") String reason
     ) {
+        log.info("[Tool] cancelOrder(orderId={}, reason={})", orderId, reason);
         Optional<Order> optional = orderService.findById(orderId);
         if (optional.isEmpty()) {
             return CancelOrderResult.of(orderId, CancelOrderResult.Outcome.NOT_FOUND);

@@ -37,7 +37,7 @@ public class SupportController {
 
     @PostMapping
     public SupportResponse triage(@RequestBody ChatRequest req) {
-        return chatClient.prompt()
+        return chatClientV2.prompt()
                 .user(req.message())
                 .call()
                 .entity(SupportResponse.class);
