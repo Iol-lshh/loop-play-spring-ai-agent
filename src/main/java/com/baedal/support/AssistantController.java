@@ -32,7 +32,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/assistant")
 public class AssistantController {
 
-    private final ChatClient assistantChatClient;
+    private final ChatClient.Builder builder;
+    private final PerformanceLoggingAdvisor performanceAdvisor;
+    private final OrderTools orderTools;
 
     // TODO [1단계-H] X-Session-Id 헤더를 받아 Memory에 연결하라.
     //
