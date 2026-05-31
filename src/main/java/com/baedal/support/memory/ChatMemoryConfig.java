@@ -7,6 +7,7 @@ import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * 3주차 — Chat Memory 설정.
@@ -51,6 +52,7 @@ public class ChatMemoryConfig {
     //   - InMemory로 충분한 상황 vs JDBC가 필요한 상황의 경계는 어디인가?
     //     (서버 재시작 / 멀티 인스턴스 / 감사 요구 / 개인정보 보존 기간 중 어느 것이 먼저 깨지는가?)
     @Bean
+    @Profile("!jdbc")
     public ChatMemoryRepository chatMemoryRepository() {
         return new InMemoryChatMemoryRepository();
     }
