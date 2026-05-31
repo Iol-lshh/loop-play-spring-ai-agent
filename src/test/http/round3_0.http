@@ -1,0 +1,83 @@
+@baseUrl = http://localhost:8080
+
+### ======================================================
+### Round 3 — 시작하기: smoke-test
+### 목적: Memory 3레이어가 조립되어 기동이 성공하는지 확인하고,
+###       지시 대명사 "그거"가 이전 주문으로 해결되는지 1차 검증한다.
+###
+### 실행 순서: [smoke-1] → [smoke-2] → [smoke-memory]
+### 세션: smoke-test (동일 헤더 유지)
+### ======================================================
+
+### [smoke-1] 첫 번째 메시지 — 주문번호 명시
+### 기대: getDeliveryStatus(2024-1234) 호출 + 위치/도착시간 응답
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: smoke-test
+
+{"message": "2024-1234 어디쯤이에요?"}
+
+>>! ./output/r3-0-smoke1/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("역삼역 위치 포함 (getDeliveryStatus 호출 증거)", function() {
+    client.assert(
+        response.body.includes("역삼역") || response.body.includes("배달") || response.body.includes("도착"),
+        "응답에 배달 위치/시간이 없음 — getDeliveryStatus가 호출되지 않았을 수 있음"
+    );
+});
+client.log(JSON.stringify({ scenario: "smoke-1", status: response.status, body: response.body }));
+%}
+
+### [smoke-2] 두 번째 메시지 — 지시 대명사 "그거"
+### 기대: Memory에서 2024-1234를 꺼내 도착 시간 재응답 (주문번호 재질문 없어야 함)
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: smoke-test
+
+{"message": "그거 몇 시에 도착해요?"}
+
+>>! ./output/r3-0-smoke2/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("주문번호 재질문 없음 — Memory 동작 증거", function() {
+    client.assert(
+        !response.body.includes("주문번호를") && !response.body.includes("어떤 주문"),
+        "응답이 주문번호를 다시 물어봄 — Memory가 동작하지 않음"
+    );
+});
+client.test("도착 시간 언급 포함", function() {
+    client.assert(
+        response.body.includes("시") || response.body.includes("분") || response.body.includes("도착"),
+        "응답에 도착 시간 관련 내용이 없음"
+    );
+});
+client.log(JSON.stringify({ scenario: "smoke-2", status: response.status, body: response.body }));
+%}
+
+### [smoke-memory] Memory 상태 조회
+### 기대: USER 2건 + ASSISTANT 2건이 순서대로 나와야 함
+GET {{baseUrl}}/api/v1/session/smoke-test/messages
+
+>>! ./output/r3-0-smoke-memory/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("4개 메시지 저장됨 (USER+ASSISTANT x 2)", function() {
+    var body = JSON.parse(response.body);
+    client.assert(body.length === 4, "메시지가 4개가 아님 — 실제: " + body.length);
+});
+client.test("첫 메시지 타입 USER", function() {
+    var body = JSON.parse(response.body);
+    client.assert(body[0].type === "USER", "첫 메시지가 USER가 아님");
+});
+client.log(JSON.stringify({ scenario: "smoke-memory", count: JSON.parse(response.body).length }));
+%}
