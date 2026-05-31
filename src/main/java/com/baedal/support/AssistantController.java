@@ -5,21 +5,21 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 1주차에서 만든 Structured Output 엔드포인트.
- * 2주차에는 여기에도 OrderTools를 등록하여 Tool Calling과 Structured Output이
- * 함께 동작할 수 있는지 직접 확인한다.
+ * Tool Calling이 적용된 자연어 응답 엔드포인트.
+ * <p>
+ * {@code /api/v1/support}가 Structured Output(JSON)을 반환하는 데 반해,
+ * 이 엔드포인트는 <b>Tool 호출의 흐름을 평문으로 관찰</b>하기 위한 용도다.
+ * DEBUG 로그와 함께 보면 Tool이 언제 어떻게 호출되는지 직관적으로 이해할 수 있다.
  */
 @RestController
-@RequestMapping("/api/v1/support")
-public class SupportController {
+@RequestMapping("/api/v1/assistant")
+public class AssistantController {
 
     private final ChatClient chatClient;
     private final PerformanceLoggingAdvisor performanceAdvisor;
     private final OrderTools orderTools;
 
-    private final ChatClient chatClientV2;
-
-    public SupportController(
+    public AssistantController(
             ChatClient.Builder builder,
             PerformanceLoggingAdvisor performanceAdvisor,
             OrderTools orderTools
@@ -27,19 +27,17 @@ public class SupportController {
         this.performanceAdvisor = performanceAdvisor;
         this.orderTools = orderTools;
         this.chatClient = builder
-                .defaultAdvisors(performanceAdvisor)
-                .build();
-        this.chatClientV2 = builder
+                .defaultSystem(BaedalPrompt.SYSTEM_PROMPT)
                 .defaultAdvisors(performanceAdvisor)
                 .defaultTools(orderTools)
                 .build();
     }
 
     @PostMapping
-    public SupportResponse triage(@RequestBody ChatRequest req) {
-        return chatClientV2.prompt()
+    public String ask(@RequestBody ChatRequest req) {
+        return chatClient.prompt()
                 .user(req.message())
                 .call()
-                .entity(SupportResponse.class);
+                .content();
     }
 }

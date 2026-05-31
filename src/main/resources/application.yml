@@ -2,11 +2,12 @@ spring:
   application:
     name: baedal-support-agent
   ai:
-    ollama:
+    openai:
       base-url: http://localhost:11434
+      api-key: ollama
       chat:
-        model: qwen2.5
         options:
+          model: qwen2.5
           temperature: 0.3
 
 logging:
