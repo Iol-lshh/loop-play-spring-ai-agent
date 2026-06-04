@@ -53,49 +53,50 @@ public class OrderMockService {
                 null,
                 OrderStatus.CREATED));
 
-        // 2024-1236: 배달 완료(DELIVERED) — cancelOrder → NOT_CANCELABLE 경로용
         save(new Order(
                 "2024-1236",
-                "맥도날드 강남점",
-                List.of(new OrderItem("빅맥 세트", 1, 8_900)),
-                now.minusMinutes(60),
-                now.minusMinutes(10),
-                "서울시 강남구 강남대로 396",
+                "스시로 서초점",
+                List.of(
+                        new OrderItem("모둠 초밥", 1, 28_000),
+                        new OrderItem("연어 롤", 1, 12_000)
+                ),
+                now.minusMinutes(45),
+                now.minusMinutes(5),
+                "서울시 서초구 강남대로 465",
                 null,
                 OrderStatus.DELIVERED));
 
-        // 2024-1237: 조리 중(COOKING) — cancelOrder → NOT_CANCELABLE 경로용
         save(new Order(
                 "2024-1237",
-                "피자헛 역삼점",
-                List.of(new OrderItem("슈퍼슈프림 L", 1, 29_900)),
-                now.minusMinutes(15),
+                "마라탕후루 역삼점",
+                List.of(new OrderItem("마라탕 중 (매운맛)", 1, 14_000)),
+                now.minusMinutes(12),
                 now.plusMinutes(25),
-                "서울시 강남구 역삼로 168",
+                "서울시 강남구 역삼로 123",
                 null,
                 OrderStatus.COOKING));
 
-        // 2024-1238: 취소됨(CANCELED) — cancelOrder → ALREADY_CANCELED 경로용
-        Order o1238 = new Order(
+        save(new Order(
                 "2024-1238",
-                "스타벅스 선릉점",
-                List.of(new OrderItem("아메리카노 톨", 2, 4_500)),
+                "맥도날드 삼성점",
+                List.of(
+                        new OrderItem("빅맥 세트", 1, 7_500),
+                        new OrderItem("애플파이", 2, 1_800)
+                ),
                 now.minusMinutes(30),
-                now.plusMinutes(0),
-                "서울시 강남구 선릉로 112",
+                now.minusMinutes(10),
+                "서울시 강남구 삼성로 212",
                 null,
-                OrderStatus.CANCELED);
-        o1238.cancel("고객 요청", now.minusMinutes(25));
-        save(o1238);
+                OrderStatus.CANCELED));
+        // 2024-1238은 사전에 취소된 상태 — 멱등성 시나리오 확인용
 
-        // 2024-1239: 사장님 수락(ACCEPTED) — cancelOrder → CANCELED 경로용
         save(new Order(
                 "2024-1239",
-                "롯데리아 삼성점",
-                List.of(new OrderItem("모짜렐라 인더버거 세트", 1, 7_900)),
-                now.minusMinutes(8),
-                now.plusMinutes(32),
-                "서울시 강남구 삼성로 212",
+                "요아정 강남역점",
+                List.of(new OrderItem("플레인 요거트 + 그래놀라", 1, 9_800)),
+                now.minusMinutes(2),
+                now.plusMinutes(28),
+                "서울시 강남구 강남대로 396",
                 null,
                 OrderStatus.ACCEPTED));
 
