@@ -1,0 +1,125 @@
+@baseUrl = http://localhost:8080
+
+### [2단계-A] NOT_CANCELABLE — 배달 완료(DELIVERED) 주문
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1236 취소해주세요"}
+
+>>! ./output/r2-2-a/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("NOT_CANCELABLE 안내 포함", function() {
+    client.assert(
+        response.body.includes("취소") && (response.body.includes("없") || response.body.includes("불가") || response.body.includes("완료")),
+        "응답에 NOT_CANCELABLE 안내가 없음"
+    );
+});
+client.log(JSON.stringify({ scenario: "2단계-A", status: response.status, body: response.body }));
+%}
+
+### [2단계-B] NOT_CANCELABLE — 조리 중(COOKING) 주문
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1237 취소해주세요"}
+
+>>! ./output/r2-2-b/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("NOT_CANCELABLE 안내 포함", function() {
+    client.assert(
+        response.body.includes("취소") && (response.body.includes("없") || response.body.includes("불가") || response.body.includes("조리")),
+        "응답에 NOT_CANCELABLE 안내가 없음"
+    );
+});
+client.log(JSON.stringify({ scenario: "2단계-B", status: response.status, body: response.body }));
+%}
+
+### [2단계-C] ALREADY_CANCELED — 사전에 이미 취소된 주문
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1238 취소해주세요"}
+
+>>! ./output/r2-2-c/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("ALREADY_CANCELED 안내 포함", function() {
+    client.assert(
+        response.body.includes("이미") && response.body.includes("취소"),
+        "응답에 ALREADY_CANCELED 안내가 없음"
+    );
+});
+client.log(JSON.stringify({ scenario: "2단계-C", status: response.status, body: response.body }));
+%}
+
+### [2단계-D1] 첫 번째 취소 → CANCELED (ACCEPTED 상태)
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1239 취소해주세요"}
+
+>>! ./output/r2-2-d1/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("CANCELED 안내 포함", function() {
+    client.assert(response.body.includes("취소"), "응답에 취소 완료 안내가 없음");
+});
+client.log(JSON.stringify({ scenario: "2단계-D1", status: response.status, body: response.body }));
+%}
+
+### [2단계-D2] 같은 주문 재취소 → ALREADY_CANCELED (멱등성 확인)
+### ※ 반드시 [2단계-D1] 호출 이후에 실행할 것
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1239 진짜 취소됐어요? 한 번 더 취소해주세요"}
+
+>>! ./output/r2-2-d2/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("ALREADY_CANCELED 안내 포함 (멱등성)", function() {
+    client.assert(
+        response.body.includes("이미") && response.body.includes("취소"),
+        "응답에 ALREADY_CANCELED 안내가 없음 — 멱등성 분기가 동작하지 않았을 수 있음"
+    );
+});
+client.log(JSON.stringify({ scenario: "2단계-D2", status: response.status, body: response.body }));
+%}
+
+### [2단계-E] NOT_FOUND — 존재하지 않는 주문번호
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 9999-0000 취소해주세요"}
+
+>>! ./output/r2-2-e/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("NOT_FOUND 안내 포함", function() {
+    client.assert(
+        response.body.includes("찾을 수 없") || response.body.includes("존재하지") || response.body.includes("확인되지"),
+        "응답에 NOT_FOUND 안내가 없음"
+    );
+});
+client.log(JSON.stringify({ scenario: "2단계-E", status: response.status, body: response.body }));
+%}

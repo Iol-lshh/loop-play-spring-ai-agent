@@ -1,6 +1,7 @@
 package com.baedal.support;
 
 import com.baedal.support.tool.OrderTools;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/assistant")
 public class AssistantController {
 
