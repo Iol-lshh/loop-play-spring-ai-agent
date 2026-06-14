@@ -91,8 +91,25 @@ public class InputGuardrailAdvisor implements CallAdvisor {
      *   (예: "고객님, 저는 주문/배달/환불 관련 상담만 도와드릴 수 있어요.")
      */
     public GuardrailResult check(String input) {
-        // TODO [1단계-A] 위 명세에 맞춰 로직을 작성하고 아래 기본 allow를 제거하라.
-        return GuardrailResult.allow("TODO");
+        // 1) 빈 입력
+        if (input == null || input.isBlank()) {
+            return GuardrailResult.block("EMPTY_INPUT",
+                    "고객님, 문의 내용을 입력해 주세요. 주문/배달/환불 중 무엇을 도와드릴까요?");
+        }
+        // 2) 길이 초과 (DoS / 토큰 남용 선제 차단)
+        if (input.length() > MAX_INPUT_CHARS) {
+            return GuardrailResult.block("INPUT_TOO_LONG",
+                    "고객님, 문의 내용이 너무 길어요. 핵심만 간단히 다시 적어 주시겠어요?");
+        }
+        // 3) Prompt Injection / 역할 재정의 시도
+        for (Pattern pattern : INJECTION_PATTERNS) {
+            if (pattern.matcher(input).find()) {
+                return GuardrailResult.block("PROMPT_INJECTION",
+                        "고객님, 저는 주문/배달/환불 관련 상담만 도와드릴 수 있어요. 무엇을 도와드릴까요?");
+            }
+        }
+        // 4) 통과
+        return GuardrailResult.allow("OK");
     }
 
     private String extractUserText(ChatClientRequest request) {

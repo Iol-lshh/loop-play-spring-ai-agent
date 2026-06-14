@@ -1,10 +1,10 @@
 package com.baedal.support;
 
+import com.baedal.support.guardrail.GuardrailResult;
 import com.baedal.support.guardrail.HandoffDetector;
 import com.baedal.support.guardrail.InputGuardrailAdvisor;
 import com.baedal.support.guardrail.OutputGuardrailAdvisor;
 import com.baedal.support.tool.OrderTools;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -31,21 +31,39 @@ import org.springframework.web.bind.annotation.*;
  *     OutputGuardrailAdvisor     order=50   (5주차) 응답 마스킹 / 유출 차단
  *     PerformanceLoggingAdvisor  order=100  (1주차) 전체 호출 시간 로깅
  * </pre>
+ * <p>
+ * ⚠️ {@link ChatClient.Builder}는 싱글톤이므로 요청마다 {@code .defaultTools()/.defaultAdvisors()}를
+ * 호출하면 누적되어 {@code "Multiple tools with the same name"} 오류가 난다. 그래서 생성자에서 한 번만
+ * {@link ChatClient}를 조립해 재사용한다(3·4주차와 동일).
  */
 @Slf4j
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/v1/assistant")
 public class AssistantController {
 
-    private final ChatClient.Builder builder;
-    private final PerformanceLoggingAdvisor performanceAdvisor;
-    private final MessageChatMemoryAdvisor memoryAdvisor;
-    private final QuestionAnswerAdvisor ragAdvisor;
+    private final ChatClient chatClient;
     private final InputGuardrailAdvisor inputGuardrail;
-    private final OutputGuardrailAdvisor outputGuardrail;
     private final HandoffDetector handoffDetector;
-    private final OrderTools orderTools;
+
+    public AssistantController(ChatClient.Builder builder,
+                              PerformanceLoggingAdvisor performanceAdvisor,
+                              MessageChatMemoryAdvisor memoryAdvisor,
+                              QuestionAnswerAdvisor ragAdvisor,
+                              InputGuardrailAdvisor inputGuardrail,
+                              OutputGuardrailAdvisor outputGuardrail,
+                              HandoffDetector handoffDetector,
+                              OrderTools orderTools) {
+        this.inputGuardrail = inputGuardrail;
+        this.handoffDetector = handoffDetector;
+        // inputGuardrail(5) → memoryAdvisor(10) → ragAdvisor(20) → outputGuardrail(50) → performanceAdvisor(100)
+        // inputGuardrail은 Memory/RAG/LLM보다 앞에서 공격을 short-circuit 차단(비용 0),
+        // outputGuardrail은 Performance보다 안쪽이라 "마스킹된" 최종 응답이 로깅된다.
+        this.chatClient = builder
+                .defaultSystem(BaedalPrompt.SYSTEM_PROMPT)
+                .defaultAdvisors(inputGuardrail, memoryAdvisor, ragAdvisor, outputGuardrail, performanceAdvisor)
+                .defaultTools(orderTools)
+                .build();
+    }
 
     @PostMapping
     public String ask(@RequestBody ChatRequest req,
@@ -53,26 +71,16 @@ public class AssistantController {
 
         log.info("[Assistant] sessionId={}, message={}", sessionId, req.message());
 
-        // TODO [3단계-B] Handoff 선검사 — LLM 호출 전에 바로 상담원 연결 응답을 돌려주는 편이
-        //    토큰 비용/지연/감정 대응 모두 유리하다.
-        //    handoffDetector.detect(req.message()) 결과가 handoff==true 면 즉시 decision.message()를 리턴하라.
-        //    왜 LLM 호출 전에 하는지를 README 설계 결정 섹션에 서술하라.
+        // 빈/blank 입력은 ChatClient.user("")가 advisor 도달 "전"에 거부하므로,
+        // InputGuardrailAdvisor가 못 잡는다. LLM 호출 전에 컨트롤러에서 선차단한다(비용 0).
+        if (req.message() == null || req.message().isBlank()) {
+            GuardrailResult result = inputGuardrail.check(req.message());
+            log.warn("[InputGuardrail] 차단 — reason={} | input.len=0", result.reason());
+            return result.fallbackMessage();
+        }
 
-        // TODO [4단계-A] try/catch로 감싸서 LLM/Tool/VectorStore 예외 시 fallback(e)로 안전 응답을 돌려주라.
-        //    스택트레이스는 절대 외부에 노출하지 않는다(log.error로 내부 로그에만 남김).
-        return builder
-                .defaultSystem(BaedalPrompt.SYSTEM_PROMPT)
-                // TODO [1단계-B] Advisor 체인에 inputGuardrail / outputGuardrail을 추가하라.
-                //   권장 순서: inputGuardrail(5) → memoryAdvisor(10) → ragAdvisor(20)
-                //            → outputGuardrail(50) → performanceAdvisor(100)
-                //   왜 inputGuardrail이 Memory보다 앞이고, outputGuardrail이 Performance보다 안쪽인지를
-                //   README 설계 결정 섹션에 서술하라.
-                .defaultAdvisors(memoryAdvisor, ragAdvisor, performanceAdvisor)
-                .defaultTools(orderTools)
-                .build()
-                .prompt()
+        return chatClient.prompt()
                 .user(req.message())
-                // 이 호출에 한해 Memory가 사용할 conversationId를 지정한다.
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
                 .call()
                 .content();
