@@ -1,0 +1,91 @@
+@baseUrl = http://localhost:8080
+
+### [3단계] 1회차
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1234 배달 어디쯤이에요?"}
+
+>>! ./output/r2-3-1/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("[버전 A 기준] 역삼역 포함", function() {
+    client.assert(response.body.includes("역삼역"), "역삼역이 없음 — Tool 미호출 또는 버전 B/C 상태일 수 있음");
+});
+client.log(JSON.stringify({ scenario: "3단계-1회차", status: response.status, body: response.body }));
+%}
+
+### [3단계] 2회차
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1234 배달 어디쯤이에요?"}
+
+>>! ./output/r2-3-2/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("[버전 A 기준] 역삼역 포함", function() {
+    client.assert(response.body.includes("역삼역"), "역삼역이 없음 — Tool 미호출 또는 버전 B/C 상태일 수 있음");
+});
+client.log(JSON.stringify({ scenario: "3단계-2회차", status: response.status, body: response.body }));
+%}
+
+### [3단계] 3회차
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1234 배달 어디쯤이에요?"}
+
+>>! ./output/r2-3-3/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("[버전 A 기준] 역삼역 포함", function() {
+    client.assert(response.body.includes("역삼역"), "역삼역이 없음 — Tool 미호출 또는 버전 B/C 상태일 수 있음");
+});
+client.log(JSON.stringify({ scenario: "3단계-3회차", status: response.status, body: response.body }));
+%}
+
+### [3단계] 4회차
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1234 배달 어디쯤이에요?"}
+
+>>! ./output/r2-3-4/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("[버전 A 기준] 역삼역 포함", function() {
+    client.assert(response.body.includes("역삼역"), "역삼역이 없음 — Tool 미호출 또는 버전 B/C 상태일 수 있음");
+});
+client.log(JSON.stringify({ scenario: "3단계-4회차", status: response.status, body: response.body }));
+%}
+
+### [3단계] 5회차
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1234 배달 어디쯤이에요?"}
+
+>>! ./output/r2-3-5/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("[버전 A 기준] 역삼역 포함", function() {
+    client.assert(response.body.includes("역삼역"), "역삼역이 없음 — Tool 미호출 또는 버전 B/C 상태일 수 있음");
+});
+client.log(JSON.stringify({ scenario: "3단계-5회차", status: response.status, body: response.body }));
+%}

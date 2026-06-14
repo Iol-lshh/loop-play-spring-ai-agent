@@ -1,0 +1,170 @@
+@baseUrl = http://localhost:8080
+
+### ======================================================
+### Round 3 — 2단계: MAX_MESSAGES 크기 실험
+###
+### 실험 A: MAX_MESSAGES=20  → 세션 exp-a
+### 실험 B: MAX_MESSAGES=2   → 세션 exp-b
+### 실험 C: MAX_MESSAGES=MAX → 세션 exp-c
+###
+### 실행 방법:
+###   실험 A: httpyac run round3_2.http --all --var session=exp-a
+###   실험 B: MAX_MESSAGES 변경 + 재기동 후 --var session=exp-b
+###   실험 C: MAX_MESSAGES 변경 + 재기동 후 --var session=exp-c
+###
+### 지시 대명사 해결 판정 대상 턴: 2, 4, 7, 9
+###   T2: "그거" = 2024-1234 → 주문번호 재질문 없으면 성공
+###   T4: "아 그 버거 세트" = 1235 메뉴 맥락 → 관련 내용 응답이면 성공
+###   T7: "그거 취소해주세요" = 2024-1235 → 1235 언급 응답이면 성공
+###   T9: "그 주문 라이더 위치" = 2024-1234 → 주문번호 재질문 없으면 성공
+### ======================================================
+
+@session = exp-a
+
+### [T1] "2024-1234 배달 상황 알려주세요"
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: {{session}}
+
+{"message": "2024-1234 배달 상황 알려주세요"}
+
+>>! ./output/r3-2-{{session}}-t1/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() { client.assert(response.status === 200); });
+client.log(JSON.stringify({ turn: 1, session: "{{session}}", body: response.body }));
+%}
+
+### [T2] "그거 몇 분 남았어요?" ← "그거" = 2024-1234
+### 판정: 주문번호 재질문 없으면 지시 대명사 해결 성공
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: {{session}}
+
+{"message": "그거 몇 분 남았어요?"}
+
+>>! ./output/r3-2-{{session}}-t2/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() { client.assert(response.status === 200); });
+var resolved = !response.body.includes("주문번호를") && !response.body.includes("어떤 주문");
+client.log(JSON.stringify({ turn: 2, session: "{{session}}", pronoun_resolved: resolved, body: response.body }));
+%}
+
+### [T3] "2024-1235 주문도 있는데 메뉴 뭐였죠?"
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: {{session}}
+
+{"message": "2024-1235 주문도 있는데 메뉴 뭐였죠?"}
+
+>>! ./output/r3-2-{{session}}-t3/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() { client.assert(response.status === 200); });
+client.log(JSON.stringify({ turn: 3, session: "{{session}}", body: response.body }));
+%}
+
+### [T4] "아 그 버거 세트" ← 1235 메뉴 맥락
+### 판정: 1235 / 버거 / 메뉴 관련 응답이면 성공
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: {{session}}
+
+{"message": "아 그 버거 세트"}
+
+>>! ./output/r3-2-{{session}}-t4/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() { client.assert(response.status === 200); });
+var resolved = response.body.includes("1235") || response.body.includes("버거") || response.body.includes("메뉴");
+client.log(JSON.stringify({ turn: 4, session: "{{session}}", pronoun_resolved: resolved, body: response.body }));
+%}
+
+### [T5] "2024-1234 취소 가능해요?"
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: {{session}}
+
+{"message": "2024-1234 취소 가능해요?"}
+
+>>! ./output/r3-2-{{session}}-t5/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() { client.assert(response.status === 200); });
+client.log(JSON.stringify({ turn: 5, session: "{{session}}", body: response.body }));
+%}
+
+### [T6] "그럼 1235는 취소되죠?"
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: {{session}}
+
+{"message": "그럼 1235는 취소되죠?"}
+
+>>! ./output/r3-2-{{session}}-t6/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() { client.assert(response.status === 200); });
+client.log(JSON.stringify({ turn: 6, session: "{{session}}", body: response.body }));
+%}
+
+### [T7] "그거 취소해주세요" ← "그거" = 2024-1235
+### 판정: 1235 언급이면 성공
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: {{session}}
+
+{"message": "그거 취소해주세요"}
+
+>>! ./output/r3-2-{{session}}-t7/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() { client.assert(response.status === 200); });
+var resolved = response.body.includes("1235") || response.body.includes("취소");
+client.log(JSON.stringify({ turn: 7, session: "{{session}}", pronoun_resolved: resolved, body: response.body }));
+%}
+
+### [T8] "아까 1234는 언제 도착해요?"
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: {{session}}
+
+{"message": "아까 1234는 언제 도착해요?"}
+
+>>! ./output/r3-2-{{session}}-t8/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() { client.assert(response.status === 200); });
+client.log(JSON.stringify({ turn: 8, session: "{{session}}", body: response.body }));
+%}
+
+### [T9] "그 주문 라이더 위치 다시 확인" ← "그 주문" = 2024-1234
+### 판정: 주문번호 재질문 없으면 성공
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: {{session}}
+
+{"message": "그 주문 라이더 위치 다시 확인"}
+
+>>! ./output/r3-2-{{session}}-t9/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() { client.assert(response.status === 200); });
+var resolved = !response.body.includes("주문번호를") && !response.body.includes("어떤 주문");
+client.log(JSON.stringify({ turn: 9, session: "{{session}}", pronoun_resolved: resolved, body: response.body }));
+%}
+
+### [T10] "요약해 주세요 지금까지 제가 뭘 물어봤는지"
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+X-Session-Id: {{session}}
+
+{"message": "요약해 주세요 지금까지 제가 뭘 물어봤는지"}
+
+>>! ./output/r3-2-{{session}}-t10/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() { client.assert(response.status === 200); });
+client.log(JSON.stringify({ turn: 10, session: "{{session}}", body: response.body }));
+%}

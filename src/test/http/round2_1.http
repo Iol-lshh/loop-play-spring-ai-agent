@@ -1,0 +1,97 @@
+@baseUrl = http://localhost:8080
+
+### [시나리오-1] 배달 위치 조회 → getDeliveryStatus 호출, "역삼역 사거리" 포함 기대
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1234 배달 어디쯤에 있어요?"}
+
+>>! ./output/r2-1-s1/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("역삼역 사거리 포함", function() {
+    client.assert(response.body.includes("역삼역"), "응답에 '역삼역'이 없음 — getDeliveryStatus가 호출되지 않았을 수 있음");
+});
+client.log(JSON.stringify({ scenario: "시나리오-1", status: response.status, body: response.body }));
+%}
+
+### [시나리오-2] 메뉴 조회 → getOrderDetail 호출, "허니콤보" 포함 기대
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1234 어떤 메뉴 주문했어요?"}
+
+>>! ./output/r2-1-s2/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("허니콤보 포함", function() {
+    client.assert(response.body.includes("허니콤보"), "응답에 '허니콤보'가 없음 — getOrderDetail이 호출되지 않았을 수 있음");
+});
+client.log(JSON.stringify({ scenario: "시나리오-2", status: response.status, body: response.body }));
+%}
+
+### [시나리오-3] 취소 가능 주문 → cancelOrder 호출, CANCELED 기대 (CREATED 상태)
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1235 방금 시킨 건데 취소해주세요"}
+
+>>! ./output/r2-1-s3/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("취소 완료 안내 포함", function() {
+    client.assert(response.body.includes("취소"), "응답에 취소 안내가 없음 — cancelOrder가 호출되지 않았을 수 있음");
+});
+client.log(JSON.stringify({ scenario: "시나리오-3", status: response.status, body: response.body }));
+%}
+
+### [시나리오-4] 배달 완료 주문 → cancelOrder 호출, NOT_CANCELABLE 기대 (DELIVERED 상태)
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2024-1236 취소해주세요"}
+
+>>! ./output/r2-1-s4/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("취소 불가 안내 포함", function() {
+    client.assert(
+        response.body.includes("취소") && (response.body.includes("없") || response.body.includes("불가")),
+        "응답에 취소 불가 안내가 없음 — NOT_CANCELABLE 분기를 타지 않았을 수 있음"
+    );
+});
+client.log(JSON.stringify({ scenario: "시나리오-4", status: response.status, body: response.body }));
+%}
+
+### [시나리오-5] 존재하지 않는 주문 → getDeliveryStatus(null), LLM "찾을 수 없다" 안내 기대
+POST {{baseUrl}}/api/v1/assistant
+Content-Type: application/json
+
+{"message": "주문번호 2099-9999 배달 어디예요?"}
+
+>>! ./output/r2-1-s5/{{$timestamp}}.json
+
+> {%
+client.test("200 OK", function() {
+    client.assert(response.status === 200, "status must be 200");
+});
+client.test("주문 없음 안내 포함", function() {
+    client.assert(
+        response.body.includes("찾을 수 없") || response.body.includes("존재하지") || response.body.includes("확인되지"),
+        "응답에 주문 없음 안내가 없음"
+    );
+});
+client.log(JSON.stringify({ scenario: "시나리오-5", status: response.status, body: response.body }));
+%}
