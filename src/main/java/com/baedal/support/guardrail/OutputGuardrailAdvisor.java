@@ -38,10 +38,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OutputGuardrailAdvisor implements CallAdvisor {
 
-    /** 시스템 프롬프트 내부 섹션 키워드가 응답에 그대로 보이면 유출 가능성 — 안내 문구로 대체. */
+    /**
+     * 시스템 프롬프트 내부 섹션 키워드가 응답에 그대로 보이면 유출 가능성 — 안내 문구로 대체.
+     * <p>
+     * ⚠️ 대괄호 헤더만 등록하면 LLM이 "[역할]" 대신 "역할:" 로 출력해 우회한다(2단계 실패 관찰).
+     * 그래서 대괄호를 떼도 남는 <b>시스템 프롬프트 고유 문구</b>를 함께 등록해 우회를 막는다.
+     */
     private static final List<String> LEAK_MARKERS = List.of(
+            // 1) 대괄호 섹션 헤더(원형)
             "[역할]", "[규칙]", "[금지]", "[Tool 사용 규칙]", "[정책 인용 규칙]",
-            "[안전 규칙]", "[응답 포맷]", "[대화 맥락 사용 규칙]"
+            "[안전 규칙]", "[응답 포맷]", "[대화 맥락 사용 규칙]",
+            // 2) 대괄호 제거 우회 대비 — 시스템 프롬프트 본문에만 등장하는 고유 문구
+            "1차로 처리합니다", "타사 배달 앱을 추천하지 않습니다", "반드시 존댓말을 사용합니다"
     );
 
     private static final String LEAK_FALLBACK =
@@ -75,8 +83,29 @@ public class OutputGuardrailAdvisor implements CallAdvisor {
      */
     @Override
     public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
-        // TODO [2단계-A] 위 명세에 맞춰 Output 검사/치환을 구현하고 아래 기본 체인 통과를 제거하라.
-        return chain.nextCall(request);
+        // 1) LLM 응답 수신 (Memory/RAG/Tool 왕복이 모두 끝난 뒤)
+        ChatClientResponse response = chain.nextCall(request);
+        String content = extractContent(response);
+
+        // 2) 빈 응답 → 안내 문구로 대체
+        if (content == null || content.isBlank()) {
+            return replace(response, request, EMPTY_FALLBACK, "EMPTY_RESPONSE");
+        }
+
+        // 3) 시스템 프롬프트 유출 마커 → 통째로 대체 (값을 가리는 게 아니라 응답 자체를 막는다)
+        for (String marker : LEAK_MARKERS) {
+            if (content.contains(marker)) {
+                return replace(response, request, LEAK_FALLBACK, "PROMPT_LEAK");
+            }
+        }
+
+        // 4) 민감 정보(전화/이메일/주소) → 마스킹된 텍스트로 대체 (맥락은 유지, 값만 가림)
+        if (masker.containsSensitive(content)) {
+            return replace(response, request, masker.mask(content), "SENSITIVE_MASKED");
+        }
+
+        // 5) 문제 없음 → 원본 그대로
+        return response;
     }
 
     private String extractContent(ChatClientResponse response) {
