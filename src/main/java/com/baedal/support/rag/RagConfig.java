@@ -87,6 +87,11 @@ public class RagConfig {
     @Value("${rag.min-chunk-chars:350}")
     private int minChunkSizeChars;
 
+    // 3단계 Advisor 순서 실험을 위해 QA Advisor의 order 를 프로퍼티로 외부화한다.
+    // 기본 20(정상: memory 10 뒤). 실험 시: ./gradlew bootRun --args='--rag.qa-order=5' (RAG가 Memory보다 먼저 — 일부러 고장)
+    @Value("${rag.qa-order:20}")
+    private int qaOrder;
+
     @Bean
     public TokenTextSplitter tokenTextSplitter() {
         return new TokenTextSplitter(
@@ -129,7 +134,7 @@ public class RagConfig {
 
         return QuestionAnswerAdvisor.builder(vectorStore)
                 .searchRequest(searchRequest)
-                .order(20)  // Memory(10) 뒤, Performance(100) 앞
+                .order(qaOrder)  // 기본 20: Memory(10) 뒤, Performance(100) 앞 (3단계에서 5로 뒤집어 실험)
                 .build();
     }
 }
