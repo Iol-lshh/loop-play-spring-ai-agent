@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.web.bind.annotation.*;
@@ -61,8 +62,11 @@ public class AssistantController {
                                OrderTools orderTools) {
         this.chatClient = builder
                 .defaultSystem(BaedalPrompt.SYSTEM_PROMPT)
-                // TODO: memoryAdvisor 다음, performanceAdvisor 앞에 ragAdvisor를 추가하라.
-                .defaultAdvisors(memoryAdvisor, performanceAdvisor)
+                // memoryAdvisor(10) → ragAdvisor(20) → loggerAdvisor(30) → performanceAdvisor(100)
+                // Memory가 "아까 그 주문"의 orderId를 복원한 뒤 RAG가 그 질문으로 정책을 검색한다.
+                // SimpleLoggerAdvisor(30)는 RAG 증강 "이후"의 최종 프롬프트(Context 블록 포함)를
+                // DEBUG 로그로 찍는 관찰용 Advisor다(LLM 입력 토큰에는 영향 없음).
+                .defaultAdvisors(memoryAdvisor, ragAdvisor, new SimpleLoggerAdvisor(30), performanceAdvisor)
                 .defaultTools(orderTools)
                 .build();
     }

@@ -3,6 +3,7 @@ package com.baedal.support;
 import com.baedal.support.tool.OrderTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.web.bind.annotation.*;
@@ -36,8 +37,8 @@ public class SupportController {
                              OrderTools orderTools) {
         this.chatClient = builder
                 .defaultSystem(BaedalPrompt.SYSTEM_PROMPT)
-                // TODO: ragAdvisor를 memoryAdvisor 다음, performanceAdvisor 앞에 추가하라.
-                .defaultAdvisors(memoryAdvisor, performanceAdvisor)
+                // AssistantController와 동일한 순서: memory(10) → rag(20) → logger(30) → performance(100)
+                .defaultAdvisors(memoryAdvisor, ragAdvisor, new SimpleLoggerAdvisor(30), performanceAdvisor)
                 .defaultTools(orderTools)
                 .build();
     }

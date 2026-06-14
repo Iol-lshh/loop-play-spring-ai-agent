@@ -36,3 +36,6 @@ out/
 ### VS Code ###
 .vscode/
 .local/
+
+### IntelliJ HTTP Client 실행 산출물 (.http 의 >>! ./output/ 응답 — 로컬 전용) ###
+src/test/http/output/

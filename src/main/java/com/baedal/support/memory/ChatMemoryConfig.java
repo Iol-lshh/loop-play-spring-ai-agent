@@ -7,6 +7,8 @@ import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
 /**
  * 3주차 — Chat Memory 설정.
@@ -47,7 +49,14 @@ public class ChatMemoryConfig {
      */
     private static final int MAX_MESSAGES = 20;
 
+    // build.gradle에 JDBC chat-memory starter가 활성화되어 있어
+    // JdbcChatMemoryRepository가 자동 구성된다(ChatMemoryRepository 빈이 2개가 됨).
+    //   - @Profile("!jdbc"): 'jdbc' 프로필일 때는 이 InMemory 빈을 끄고 JDBC 구현만 남긴다
+    //     (application-jdbc.yml + ./gradlew bootRun --args='--spring.profiles.active=jdbc')
+    //   - @Primary: 기본 프로필에서는 InMemory를 우선 주입한다(자동 구성된 JDBC 빈과의 모호성 해소).
     @Bean
+    @Primary
+    @Profile("!jdbc")
     public ChatMemoryRepository chatMemoryRepository() {
         // InMemory 구현: ConcurrentHashMap 기반, 서버 재시작 시 소실.
         //

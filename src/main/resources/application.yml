@@ -23,7 +23,8 @@ spring:
       # 임베딩 모델을 Ollama로 통일한다.
       # 사용 전: ollama pull qwen3-embedding:0.6b
       embedding:
-        model: qwen3-embedding:0.6b
+        options:
+          model: qwen3-embedding:0.6b
 
     # -------------------------------------------------------------------
     # 4주차 — PgVector 설정
