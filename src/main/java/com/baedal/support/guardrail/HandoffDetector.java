@@ -59,7 +59,24 @@ public class HandoffDetector {
      *   실제 동작 가능함을 보이라.
      */
     public HandoffDecision detect(String input) {
-        // TODO [3단계-A] 위 명세에 맞춰 우선순위대로 판별하고 적절한 HandoffDecision을 반환하라.
+        if (input == null || input.isBlank()) {
+            return HandoffDecision.none();
+        }
+        // 우선순위: EXPLICIT → LEGAL → ANGER
+        //  - 명시적 요청은 의도가 가장 분명하므로 최우선.
+        //  - 법적/민원은 감정보다 먼저 — "화나서 신고할 거예요"는 분노가 아니라 법적 사안으로 다뤄야 한다.
+        if (matchesAny(input, EXPLICIT_PATTERNS)) {
+            return HandoffDecision.handoff(HandoffReason.EXPLICIT_REQUEST,
+                    "네, 바로 상담원에게 연결해 드릴게요. 잠시만 기다려 주세요. (연결 번호: 1600-0987)");
+        }
+        if (matchesAny(input, LEGAL_PATTERNS)) {
+            return HandoffDecision.handoff(HandoffReason.LEGAL_ISSUE,
+                    "법적·민원 관련 사안은 전문 상담원이 정확히 도와드리는 게 맞아요. 바로 상담원 연결을 진행할게요. (연결 번호: 1600-0987)");
+        }
+        if (matchesAny(input, ANGER_PATTERNS)) {
+            return HandoffDecision.handoff(HandoffReason.HIGH_EMOTION,
+                    "많이 불편하셨을 것 같아 정말 죄송합니다. 제가 바로 상담원에게 연결해 드릴게요. (연결 번호: 1600-0987)");
+        }
         return HandoffDecision.none();
     }
 

@@ -79,6 +79,13 @@ public class AssistantController {
             return result.fallbackMessage();
         }
 
+        // Handoff 선검사 — LLM 호출 "전"에 상담원 전환 응답을 즉시 반환한다(비용 0, 수십 ms).
+        HandoffDetector.HandoffDecision handoff = handoffDetector.detect(req.message());
+        if (handoff.handoff()) {
+            log.info("[Handoff] 상담원 전환 — reason={}", handoff.reason());
+            return handoff.message();
+        }
+
         return chatClient.prompt()
                 .user(req.message())
                 .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
