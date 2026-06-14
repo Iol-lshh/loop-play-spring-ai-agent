@@ -4,6 +4,7 @@ import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvi
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -76,14 +77,24 @@ public class RagConfig {
     // 설계 결정 질문 (README):
     //   - 배달 정책 문서는 조항 단위로 이미 쪼개져 있다. 이상적인 청크 크기는?
     //   - 만약 문서가 "사용자 리뷰 10만 건"이라면 청크 크기 선택이 어떻게 달라져야 하는가?
+    // 2단계 청킹 실험을 위해 chunkSize / minChunkSizeChars 를 프로퍼티로 외부화한다.
+    // 기본값은 1단계와 동일(800 / 350). 실험 시 재컴파일 없이 다음처럼 바꿔 돌린다:
+    //   ./gradlew bootRun --args='--rag.chunk-size=100  --rag.min-chunk-chars=40'   # 실험 B
+    //   ./gradlew bootRun --args='--rag.chunk-size=2000 --rag.min-chunk-chars=800'  # 실험 C
+    @Value("${rag.chunk-size:800}")
+    private int chunkSize;
+
+    @Value("${rag.min-chunk-chars:350}")
+    private int minChunkSizeChars;
+
     @Bean
     public TokenTextSplitter tokenTextSplitter() {
         return new TokenTextSplitter(
-                800,    // chunkSize: 청크 한 개의 목표 토큰 수
-                350,    // minChunkSizeChars: 이보다 작으면 앞 청크에 병합
-                5,      // minChunkLengthToEmbed: 이보다 짧으면 임베딩 제외
-                10_000, // maxNumChunks
-                true    // keepSeparator (문단 구분자 유지)
+                chunkSize,         // chunkSize: 청크 한 개의 목표 토큰 수
+                minChunkSizeChars, // minChunkSizeChars: 이보다 작으면 앞 청크에 병합
+                5,                 // minChunkLengthToEmbed: 이보다 짧으면 임베딩 제외
+                10_000,            // maxNumChunks
+                true               // keepSeparator (문단 구분자 유지)
         );
     }
 
